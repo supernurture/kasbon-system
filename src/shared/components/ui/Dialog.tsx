@@ -28,7 +28,12 @@ export function Dialog({ open, onClose, variant, labelledBy, children }: DialogP
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // showModal() focuses the first focusable element, overriding React's autoFocus.
+      // Content marks a safer default with data-autofocus (e.g. "Gak jadi", not "Hapus").
+      dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 

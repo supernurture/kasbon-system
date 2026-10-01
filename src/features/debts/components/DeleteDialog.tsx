@@ -51,7 +51,7 @@ export function DeleteDialog({ debt, onCancel, onConfirm }: DeleteDialogProps) {
               onClick={onCancel}
               disabled={deleting}
               className="min-h-12 md:min-h-11"
-              autoFocus
+              data-autofocus
             >
               Gak jadi
             </Button>
