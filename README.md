@@ -13,14 +13,15 @@ Catat siapa utang siapa, tandai lunas, beres. Web app sederhana buat ngelacak ut
 
 ### Library tambahan & alasannya
 
-| Library                                   | Kenapa                                                                                                                                                              |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@supabase/ssr`                           | Session Supabase disimpan di cookie, jadi bisa dibaca di Server Component, Route Handler, dan `proxy.ts`.                                                           |
-| `zod`                                     | Satu schema (`src/features/debts/schemas.ts`) dipakai buat validasi form di client **dan** body/query di API. Aturan dan pesan error gak mungkin beda.              |
-| `react-hook-form` + `@hookform/resolvers` | Form uncontrolled (gak re-render tiap ketikan), error per field langsung dari schema zod via `zodResolver`, plus `isSubmitting` buat loading state.                 |
-| `server-only`                             | Bikin build gagal kalau kode server (Supabase server client, helper API) ke-import dari client.                                                                     |
-| `husky` + `@commitlint/*`                 | Commit yang gak ngikutin [Conventional Commits](https://www.conventionalcommits.org) ditolak di hook `commit-msg`. `pre-commit` jalanin lint, cek format, dan test. |
-| `prettier`                                | Format konsisten.                                                                                                                                                   |
+| Library                                   | Kenapa                                                                                                                                                                                                                      |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@supabase/ssr`                           | Session Supabase disimpan di cookie, jadi bisa dibaca di Server Component, Route Handler, dan `proxy.ts`.                                                                                                                   |
+| `zod`                                     | Satu schema (`src/features/debts/schemas.ts`) dipakai buat validasi form di client **dan** body/query di API. Aturan dan pesan error gak mungkin beda.                                                                      |
+| `react-hook-form` + `@hookform/resolvers` | Form uncontrolled (gak re-render tiap ketikan), error per field langsung dari schema zod via `zodResolver`, plus `isSubmitting` buat loading state.                                                                         |
+| `server-only`                             | Bikin build gagal kalau kode server (Supabase server client, helper API) ke-import dari client.                                                                                                                             |
+| `tailwind-merge`                          | `cn()` menggabungkan class komponen dengan class dari pemanggil; kalau bentrok (mis. `text-sm` vs `text-base`), class terakhir yang menang. Tanpa ini hasilnya tergantung urutan CSS dan sempat bikin border tombol hilang. |
+| `husky` + `@commitlint/*`                 | Commit yang gak ngikutin [Conventional Commits](https://www.conventionalcommits.org) ditolak di hook `commit-msg`. `pre-commit` jalanin lint, cek format, dan test.                                                         |
+| `prettier`                                | Format konsisten.                                                                                                                                                                                                           |
 
 Yang sengaja **gak** dipakai: data-fetching library (cukup satu hook `useDebts`), chart library (bar chart cukup `div` + CSS), date library (`Intl` + fungsi kecil di `src/shared/lib/format.ts`).
 

@@ -2,7 +2,6 @@ import type { ComponentProps } from "react";
 
 import { cn } from "@/shared/lib/cn";
 
-// Each variant owns its border colour: two border-colour utilities on one element would conflict.
 const variants = {
   primary: "border-transparent bg-accent text-bg hover:bg-accent-600 active:bg-accent-700",
   secondary: "border-divider hover:bg-ink/7 active:bg-ink/14",

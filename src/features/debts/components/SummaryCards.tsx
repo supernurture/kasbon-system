@@ -2,7 +2,9 @@ import { formatRupiah, formatSignedRupiah } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/cn";
 import type { DebtSummary } from "../lib/summary";
 
-const label = "text-[11px] tracking-[0.1em] text-neutral-700 uppercase";
+const label = "text-[11px] font-normal text-neutral-700";
+const totalLabel = `${label} md:tracking-[0.1em] md:uppercase`;
+const netLabel = `${label} tracking-[0.1em] uppercase`;
 
 function netCaption(net: number) {
   if (net > 0) return "Kamu lebih banyak dihutangin";
@@ -33,14 +35,7 @@ export function SummaryCards({ summary }: { summary: DebtSummary }) {
       className="grid grid-cols-2 border-b-2 border-divider md:mx-8 md:mt-7 md:grid-cols-3 md:border-t-2 md:border-t-ink"
     >
       <div className="border-r-2 border-divider px-4 py-3.5 md:py-5 md:pr-6 md:pl-0">
-        <h2
-          className={cn(
-            label,
-            "font-normal tracking-normal normal-case md:tracking-[0.1em] md:uppercase",
-          )}
-        >
-          Total dihutang ke saya
-        </h2>
+        <h2 className={totalLabel}>Total dihutang ke saya</h2>
         <p className="mt-1 text-lg font-extrabold tabular-nums md:mt-2.5 md:text-[34px] md:leading-tight md:tracking-tight">
           {formatRupiah(owedToMe)}
         </p>
@@ -51,14 +46,7 @@ export function SummaryCards({ summary }: { summary: DebtSummary }) {
       </div>
 
       <div className="px-4 py-3.5 md:border-r-2 md:border-divider md:px-6 md:py-5">
-        <h2
-          className={cn(
-            label,
-            "font-normal tracking-normal normal-case md:tracking-[0.1em] md:uppercase",
-          )}
-        >
-          Total saya hutang
-        </h2>
+        <h2 className={totalLabel}>Total saya hutang</h2>
         <p className="mt-1 text-lg font-extrabold tabular-nums md:mt-2.5 md:text-[34px] md:leading-tight md:tracking-tight">
           {formatRupiah(iOwe)}
         </p>
@@ -74,7 +62,7 @@ export function SummaryCards({ summary }: { summary: DebtSummary }) {
           net >= 0 ? "bg-positive-bg" : "bg-accent-100",
         )}
       >
-        <h2 className={cn(label, "font-normal")}>Net</h2>
+        <h2 className={netLabel}>Net</h2>
         <p
           className={cn(
             "mt-1.5 text-4xl leading-tight font-extrabold tracking-tight tabular-nums md:mt-2.5 md:text-[34px]",
