@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, Loader2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/shared/components/ui/Button";
@@ -35,14 +36,24 @@ type DebtFormDialogProps = {
 };
 
 export function DebtFormDialog({ target, onClose, onSave }: DebtFormDialogProps) {
+  // The form registers its close guard here so Esc and backdrop clicks go through it too.
+  const requestCloseRef = useRef<() => void>(onClose);
+
   return (
-    <Dialog open={target !== null} onClose={onClose} variant="drawer" labelledBy="debt-form-title">
+    <Dialog
+      open={target !== null}
+      onClose={onClose}
+      onRequestClose={() => requestCloseRef.current()}
+      variant="drawer"
+      labelledBy="debt-form-title"
+    >
       {target && (
         <DebtForm
           key={target === "new" ? "new" : target.id}
           existing={target === "new" ? null : target}
           onClose={onClose}
           onSave={onSave}
+          requestCloseRef={requestCloseRef}
         />
       )}
     </Dialog>
@@ -66,21 +77,42 @@ type DebtFormProps = {
   existing: Debt | null;
   onClose: () => void;
   onSave: DebtFormDialogProps["onSave"];
+  requestCloseRef: RefObject<() => void>;
 };
 
-function DebtForm({ existing, onClose, onSave }: DebtFormProps) {
+function DebtForm({ existing, onClose, onSave, requestCloseRef }: DebtFormProps) {
   const {
     register,
     control,
     handleSubmit,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<DebtInput>({
     resolver: zodResolver(debtInputSchema),
     defaultValues: toFormValues(existing),
   });
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
 
   const noteLength = useWatch({ control, name: "note" })?.length ?? 0;
+
+  // Every way out (×, Batal, Esc, backdrop) lands here: never drop typed input silently.
+  const requestClose = useCallback(() => {
+    if (isSubmitting) return;
+    if (isDirty) setConfirmingDiscard(true);
+    else onClose();
+  }, [isDirty, isSubmitting, onClose]);
+
+  useEffect(() => {
+    requestCloseRef.current = requestClose;
+  }, [requestCloseRef, requestClose]);
+
+  // Reload / closing the tab with unsaved input: let the browser ask first.
+  useEffect(() => {
+    if (!isDirty) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isDirty]);
 
   const onSubmit = handleSubmit(async (values) => {
     const error = await onSave(values, existing);
@@ -99,7 +131,7 @@ function DebtForm({ existing, onClose, onSave }: DebtFormProps) {
         <h2 id="debt-form-title" className="flex-1 text-xl md:text-[22px]">
           {existing ? "Edit catatan" : "Catat baru"}
         </h2>
-        <Button variant="plain" iconOnly onClick={onClose} aria-label="Tutup">
+        <Button variant="plain" iconOnly onClick={requestClose} aria-label="Tutup">
           <X size={20} aria-hidden />
         </Button>
       </div>
@@ -217,20 +249,50 @@ function DebtForm({ existing, onClose, onSave }: DebtFormProps) {
         </p>
       )}
 
-      <div className="flex gap-2 border-t-2 border-ink px-4 pt-3 pb-5 md:border-divider md:px-6 md:py-4">
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={isSubmitting}
-          className="min-h-13 flex-1 text-base md:min-h-12 md:text-sm"
+      {confirmingDiscard ? (
+        <div
+          role="alertdialog"
+          aria-labelledby="discard-title"
+          aria-describedby="discard-desc"
+          className="flex flex-col gap-2 border-t-4 border-accent px-4 pt-3 pb-5 md:px-6 md:py-4"
         >
-          {isSubmitting && <Loader2 size={16} className="animate-spin" aria-hidden />}
-          {existing ? "Simpan perubahan" : "Simpan catatan"}
-        </Button>
-        <Button onClick={onClose} className="min-h-12 max-md:hidden">
-          Batal
-        </Button>
-      </div>
+          <p id="discard-title" className="font-extrabold">
+            Buang perubahan?
+          </p>
+          <p id="discard-desc" className="text-[13px] text-neutral-700">
+            Isian yang belum disimpan bakal hilang.
+          </p>
+          <div className="mt-1 flex flex-col gap-2 md:flex-row-reverse">
+            {/* Safe choice first in focus order: Enter keeps the input. */}
+            <Button
+              variant="primary"
+              autoFocus
+              onClick={() => setConfirmingDiscard(false)}
+              className="min-h-12 md:flex-1"
+            >
+              Lanjut ngisi
+            </Button>
+            <Button onClick={onClose} className="min-h-12 text-accent">
+              Buang
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-2 border-t-2 border-ink px-4 pt-3 pb-5 md:border-divider md:px-6 md:py-4">
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={isSubmitting}
+            className="min-h-13 flex-1 text-base md:min-h-12 md:text-sm"
+          >
+            {isSubmitting && <Loader2 size={16} className="animate-spin" aria-hidden />}
+            {existing ? "Simpan perubahan" : "Simpan catatan"}
+          </Button>
+          <Button onClick={requestClose} className="min-h-12 max-md:hidden">
+            Batal
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

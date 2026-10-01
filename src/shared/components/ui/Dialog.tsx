@@ -15,14 +15,24 @@ const variants = {
 
 type DialogProps = {
   open: boolean;
+  /** Runs once the dialog has closed. */
   onClose: () => void;
+  /** Esc / backdrop click ask to close; the owner decides (e.g. confirm unsaved changes). Defaults to onClose. */
+  onRequestClose?: () => void;
   variant: keyof typeof variants;
   labelledBy: string;
   children: ReactNode;
 };
 
-/** Native <dialog>: focus trap, Esc to close and inert background come from the browser. */
-export function Dialog({ open, onClose, variant, labelledBy, children }: DialogProps) {
+/** Native <dialog>: focus trap and inert background come from the browser. */
+export function Dialog({
+  open,
+  onClose,
+  onRequestClose = onClose,
+  variant,
+  labelledBy,
+  children,
+}: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -42,8 +52,13 @@ export function Dialog({ open, onClose, variant, labelledBy, children }: DialogP
       ref={ref}
       aria-labelledby={labelledBy}
       onClose={onClose}
+      onCancel={(event) => {
+        // Esc: keep the dialog open and let the owner decide; `open` drives the actual close.
+        event.preventDefault();
+        onRequestClose();
+      }}
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) onRequestClose();
       }}
       className={cn("m-0 bg-bg p-0 text-ink shadow-lg", variants[variant])}
     >
