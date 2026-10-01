@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -34,6 +34,7 @@ const copy = {
 export function AuthForm() {
   const [mode, setMode] = useState<Mode>("signin");
   const [result, setResult] = useState<AuthResult | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -93,14 +94,29 @@ export function AuthForm() {
       </Field>
 
       <Field id="password" label="Password" error={errors.password?.message}>
-        <Input
-          id="password"
-          type="password"
-          autoComplete={mode === "signin" ? "current-password" : "new-password"}
-          aria-invalid={!!errors.password}
-          aria-describedby={errors.password ? "password-error" : undefined}
-          {...register("password")}
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? "password-error" : undefined}
+            className="pr-11"
+            {...register("password")}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((shown) => !shown)}
+            // Keep focus (and the mobile keyboard) in the input while toggling.
+            onMouseDown={(event) => event.preventDefault()}
+            // The label itself states the action, so no aria-pressed (that would double up).
+            aria-label={showPassword ? "Sembunyikan password" : "Lihat password"}
+            aria-controls="password"
+            className="absolute inset-y-0 right-0 flex w-11 cursor-pointer items-center justify-center text-neutral-600 hover:text-ink"
+          >
+            {showPassword ? <EyeOff size={18} aria-hidden /> : <Eye size={18} aria-hidden />}
+          </button>
+        </div>
       </Field>
 
       {result && (
