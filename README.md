@@ -2,7 +2,7 @@
 
 Catat siapa utang siapa, tandai lunas, beres. Web app sederhana buat ngelacak utang piutang pribadi.
 
-**Demo:** _TODO: link Vercel_
+**Demo:** https://kasbon-system.vercel.app (langsung daftar akun baru, gak perlu konfirmasi email)
 
 ## Stack
 
@@ -132,4 +132,4 @@ Keputusan yang paling aku banggain: **satu sumber kebenaran di tiap lapisan**. S
 
 ## Time spent
 
-_TODO: isi jujur._
+±5 jam.
