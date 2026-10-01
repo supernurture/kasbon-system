@@ -59,7 +59,18 @@
     background: color-mix(in srgb, var(--color-accent) 30%, transparent);
   }
 
+  body:has(dialog[open]) {
+    overflow: hidden;
+  }
+
   dialog::backdrop {
     background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
 }

@@ -1,9 +1,5 @@
-export default function Home() {
-  return (
-    <main className="p-4">
-      <h1 className="text-3xl">
-        Kasbon<span className="text-accent">.</span>
-      </h1>
-    </main>
-  );
+import { Dashboard } from "@/features/debts/components/Dashboard";
+
+export default function HomePage() {
+  return <Dashboard />;
 }
