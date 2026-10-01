@@ -5,19 +5,22 @@ import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/shared/components/ui/Button";
 import { Toast } from "@/shared/components/ui/Toast";
+import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import { useToast } from "@/shared/hooks/useToast";
 import { formatLongToday } from "@/shared/lib/format";
 import { toSearchParams } from "../api";
 import { useDebtMutations } from "../hooks/useDebtMutations";
 import { useDebts } from "../hooks/useDebts";
-import { computeSummary } from "../lib/summary";
+import { computeSummary, groupByPerson } from "../lib/summary";
 import { debtQuerySchema, type DebtQuery } from "../schemas";
 import type { Debt } from "../types";
+import { BalanceChart } from "./BalanceChart";
 import { DebtFormDialog } from "./DebtFormDialog";
 import { DebtList } from "./DebtList";
-import { DebtToolbar } from "./DebtToolbar";
+import { DebtToolbar, type DebtView } from "./DebtToolbar";
 import { DeleteDialog } from "./DeleteDialog";
 import { EmptyState, ErrorState, ListSkeleton, NoResults } from "./ListStates";
+import { PersonGroupList } from "./PersonGroupList";
 import { SummaryCards } from "./SummaryCards";
 
 const DEFAULT_QUERY = debtQuerySchema.parse({});
@@ -26,6 +29,8 @@ const noopSubscribe = () => () => {};
 
 export function Dashboard() {
   const [query, setQuery] = useState<DebtQuery>(DEFAULT_QUERY);
+  const [search, setSearch] = useState("");
+  const [view, setView] = useState<DebtView>("list");
   const [formTarget, setFormTarget] = useState<Debt | "new" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Debt | null>(null);
   const { toast, show } = useToast();
@@ -35,7 +40,8 @@ export function Dashboard() {
 
   // Summary always covers every entry; the list follows the filters. With no filters the
   // list reuses the summary request instead of fetching the same thing twice.
-  const listParams = toSearchParams(query);
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const listParams = toSearchParams({ ...query, q: debouncedSearch });
   const all = useDebts("");
   const filtered = useDebts(listParams === "" ? null : listParams);
   const list = listParams === "" ? all : filtered;
@@ -53,24 +59,34 @@ export function Dashboard() {
   });
 
   const summary = useMemo(() => computeSummary(all.debts ?? []), [all.debts]);
+  const groups = useMemo(() => groupByPerson(list.debts ?? []), [list.debts]);
   const openCreate = () => setFormTarget("new");
   const hasNoDebts = all.debts?.length === 0;
+
+  function resetFilters() {
+    setQuery(DEFAULT_QUERY);
+    setSearch("");
+  }
 
   function renderList() {
     const error = all.error ?? list.error;
     if (error) return <ErrorState message={error} onRetry={reload} />;
     if (!list.debts) return <ListSkeleton />;
     if (hasNoDebts) return <EmptyState onCreate={openCreate} />;
-    if (list.debts.length === 0) return <NoResults onReset={() => setQuery(DEFAULT_QUERY)} />;
+    if (list.debts.length === 0) return <NoResults onReset={resetFilters} />;
     return (
       <div className={list.isLoading ? "opacity-60 transition-opacity" : "transition-opacity"}>
-        <DebtList
-          debts={list.debts}
-          pendingIds={pendingIds}
-          onToggleSettled={toggleSettled}
-          onEdit={setFormTarget}
-          onDelete={setDeleteTarget}
-        />
+        {view === "group" ? (
+          <PersonGroupList groups={groups} />
+        ) : (
+          <DebtList
+            debts={list.debts}
+            pendingIds={pendingIds}
+            onToggleSettled={toggleSettled}
+            onEdit={setFormTarget}
+            onDelete={setDeleteTarget}
+          />
+        )}
       </div>
     );
   }
@@ -96,10 +112,18 @@ export function Dashboard() {
         className={!all.debts && !all.error ? "animate-pulse" : undefined}
       >
         <SummaryCards summary={summary} />
+        <BalanceChart summary={summary} />
       </div>
 
       {!hasNoDebts && (
-        <DebtToolbar query={query} onChange={(p) => setQuery((q) => ({ ...q, ...p }))} />
+        <DebtToolbar
+          query={query}
+          search={search}
+          view={view}
+          onChange={(patch) => setQuery((current) => ({ ...current, ...patch }))}
+          onSearch={setSearch}
+          onViewChange={setView}
+        />
       )}
 
       <section aria-label="Daftar catatan" className="px-4 pt-2 md:px-8 md:pt-5">
