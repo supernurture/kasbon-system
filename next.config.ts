@@ -10,7 +10,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // Per-user data: never let a browser or shared proxy cache it.
+      { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "private, no-store" }] },
+    ];
   },
 };
 
