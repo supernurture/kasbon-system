@@ -115,12 +115,18 @@ supabase/migrations/      # skema + RLS
 
 Keputusan yang paling aku banggain: **satu sumber kebenaran di tiap lapisan**. Schema zod yang sama dipakai form (lewat react-hook-form) dan API, jadi aturan "nama wajib, jumlah bulat > 0, catatan ≤ 200" gak mungkin beda antara client dan server; schema-nya `strict`, jadi request yang nyelipin `user_id` atau `settled_at` langsung ditolak. Di bawahnya, RLS + `force row level security` + revoke dari `anon` bikin database sendiri yang jadi pagar terakhir: API route sengaja pakai client ber-session user (bukan service role), jadi kalaupun ada bug di route, Postgres tetap cuma ngasih row milik user itu. "Tandai lunas" juga idempotent di server: klik dua kali gak ngegeser `settled_at`, dan UI selalu refetch dari DB setelah mutasi, jadi refresh gak pernah bikin status balik.
 
+## Catatan buat reviewer
+
+- **"Confirm email" sengaja dimatikan** di project Supabase demo. Layanan email bawaan Supabase cuma ngirim ke anggota tim project (dan jumlahnya dibatasi), jadi kalau nyala, kamu gak bakal nerima link konfirmasi dan gak bisa masuk. Dengan dimatikan, kamu bisa langsung daftar dua akun buat ngetes RLS. Keamanan data gak berkurang: yang ngelindungin data itu RLS, bukan verifikasi email.
+- Buat production: nyalain lagi "Confirm email" + pasang SMTP sendiri (Resend / SES). App-nya udah siap: kalau konfirmasi nyala, halaman daftar nampilin "Sip! Cek email kamu buat konfirmasi…".
+
 ## Trade-off (kalau ada 1 hari lagi)
 
 - **Optimistic update** buat tandai lunas/hapus. Sekarang nunggu respons server + refetch: aman dan konsisten, tapi ada jeda kecil.
 - **Filter di URL** (`?status=open&q=budi`) biar bisa di-share/bookmark dan selamat dari refresh.
 - **Pagination / infinite scroll** — sekarang list diambil sekaligus; cukup buat pemakaian pribadi, gak buat ribuan entry.
 - **Test integrasi** API + RLS otomatis (Supabase lokal di CI), bukan cuma unit test format & summary plus cek manual pakai curl.
+- **Verifikasi email** dimatikan demi demo (lihat catatan di atas); production butuh SMTP sendiri.
 - **Sort** baru arah turun (terbaru / terbesar); belum ada toggle naik.
 
 ## Time spent
