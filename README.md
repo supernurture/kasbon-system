@@ -44,7 +44,7 @@ Butuh Node 22.18+ (test pakai type stripping bawaan Node) dan pnpm.
    Dua-duanya memang publik; yang ngelindungin data adalah RLS. App ini **gak** butuh `service_role` key sama sekali.
 
 3. **Migrate** — pilih salah satu:
-   - Supabase Dashboard → SQL Editor → paste isi `supabase/migrations/20261001000000_create_debts.sql` → Run.
+   - Supabase Dashboard → SQL Editor → jalankan **semua** file di `supabase/migrations/` **berurutan** (urut nama file), masing-masing paste → Run.
    - Atau pakai CLI: `pnpm dlx supabase link --project-ref <ref>` lalu `pnpm dlx supabase db push`.
 
 4. **Auth** — Supabase → Authentication → Sign In / Providers → Email. Kalau "Confirm email" nyala, user harus klik link di email dulu sebelum bisa masuk (app udah nampilin pesannya).
