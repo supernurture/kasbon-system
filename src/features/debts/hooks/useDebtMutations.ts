@@ -1,8 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
-import { debtsApi } from "../api";
+import { debtsApi, SessionExpiredError } from "../api";
 import type { DebtInput } from "../schemas";
 import type { Debt } from "../types";
 
@@ -13,6 +14,7 @@ type MutationResult = Promise<string | null>;
 
 /** Every write goes through the API, then `onChanged` refetches, so the screen always mirrors the DB. */
 export function useDebtMutations({ onChanged, notify }: { onChanged: () => void; notify: Notify }) {
+  const router = useRouter();
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
 
   const track = useCallback(
@@ -30,6 +32,10 @@ export function useDebtMutations({ onChanged, notify }: { onChanged: () => void;
         return null;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        if (error instanceof SessionExpiredError) {
+          router.replace("/login");
+          return message;
+        }
         if (toastError) notify(message, "error");
         return message;
       } finally {
@@ -40,7 +46,7 @@ export function useDebtMutations({ onChanged, notify }: { onChanged: () => void;
         });
       }
     },
-    [notify, onChanged],
+    [notify, onChanged, router],
   );
 
   const toggleSettled = useCallback(

@@ -11,6 +11,9 @@ function errorMessage(body: unknown) {
   return FALLBACK_ERROR;
 }
 
+/** 401 from the API: the session is gone (logged out elsewhere, revoked or expired). */
+export class SessionExpiredError extends Error {}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
@@ -26,6 +29,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (response.status === 204) return undefined as T;
 
   const body: unknown = await response.json().catch(() => null);
+  if (response.status === 401) throw new SessionExpiredError(errorMessage(body));
   if (!response.ok) throw new Error(errorMessage(body));
   return (body as { data: T }).data;
 }
