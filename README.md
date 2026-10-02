@@ -82,17 +82,39 @@ Status code: `400` input gak valid (termasuk field asing kayak `user_id`), `401`
 
 ## Cek kebocoran RLS
 
-```bash
-# Pakai JWT user B (ambil dari cookie / supabase.auth.getSession()) buat baca data user A:
-curl "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/debts?select=*" \
-  -H "apikey: $NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" \
-  -H "Authorization: Bearer <JWT user B>"
-# → cuma row milik B.
+Bisa langsung dicoba, cukup `bash` + `curl` (Git Bash di Windows juga jalan). Publishable key di bawah memang publik by design: yang ngejaga data itu RLS di Postgres, bukan kerahasiaan key. Script-nya bikin dua akun baru (A dan B), A nyatet satu entry, lalu B nyoba baca, edit, hapus, dan nyamar jadi A lewat Supabase REST API langsung (tanpa lewat app).
 
-# Tanpa JWT (cuma API key):
-curl "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/debts?select=*" -H "apikey: $NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
-# → ditolak (permission denied), role anon gak punya grant sama sekali.
+```bash
+URL="https://lphyvvojxisvxpnfkmkx.supabase.co"
+KEY="sb_publishable_tIPI5scvwUnD2SvEilt0rA_wbxGUqqk"
+H=(-H "apikey: $KEY" -H "Content-Type: application/json")
+token() { curl -s "$URL/auth/v1/signup" "${H[@]}" -d "{\"email\":\"$1\",\"password\":\"Rahasia-12345\"}" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4; }
+A=$(token "rls-a-$RANDOM@example.com")
+B=$(token "rls-b-$RANDOM@example.com")
+A_ID=$(curl -s "$URL/auth/v1/user" "${H[@]}" -H "Authorization: Bearer $A" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+# A nyatet entry pribadi
+ID=$(curl -s "$URL/rest/v1/debts" "${H[@]}" -H "Authorization: Bearer $A" -H "Prefer: return=representation" \
+  -d '{"type":"owed_to_me","counterpart_name":"Rahasia A","amount":777}' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+# B baca semua → []
+curl -s "$URL/rest/v1/debts?select=*" "${H[@]}" -H "Authorization: Bearer $B"; echo
+# B baca entry A → []
+curl -s "$URL/rest/v1/debts?id=eq.$ID" "${H[@]}" -H "Authorization: Bearer $B"; echo
+# B edit entry A → [] (0 baris berubah)
+curl -s -X PATCH "$URL/rest/v1/debts?id=eq.$ID" "${H[@]}" -H "Authorization: Bearer $B" -H "Prefer: return=representation" -d '{"amount":1}'; echo
+# B hapus entry A → [] (0 baris kehapus)
+curl -s -X DELETE "$URL/rest/v1/debts?id=eq.$ID" "${H[@]}" -H "Authorization: Bearer $B" -H "Prefer: return=representation"; echo
+# B bikin entry atas nama A → 403
+curl -s -o /dev/null -w "%{http_code}\n" "$URL/rest/v1/debts" "${H[@]}" -H "Authorization: Bearer $B" \
+  -d "{\"type\":\"i_owe\",\"counterpart_name\":\"nyamar\",\"amount\":1,\"user_id\":\"$A_ID\"}"
+# Cuma API key, tanpa login → 401 "permission denied for table debts"
+curl -s "$URL/rest/v1/debts?select=*" "${H[@]}"; echo
+# A cek lagi → masih [{"counterpart_name":"Rahasia A","amount":777}], gak berubah
+curl -s "$URL/rest/v1/debts?select=counterpart_name,amount" "${H[@]}" -H "Authorization: Bearer $A"; echo
 ```
+
+Lewat API app (`/api/debts`) hasilnya sama: tanpa login `401`, dan entry milik user lain `404`.
 
 ## Struktur
 
