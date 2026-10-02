@@ -59,6 +59,12 @@
     background: color-mix(in srgb, var(--color-accent) 30%, transparent);
   }
 
+  /* Edge adds its own reveal/clear buttons to inputs; the password field has a custom toggle. */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
+
   body:has(dialog[open]) {
     overflow: hidden;
   }
