@@ -48,20 +48,26 @@ export function Dashboard() {
 
   const reloadAll = all.reload;
   const reloadFiltered = filtered.reload;
-  const reload = useCallback(() => {
-    reloadAll();
-    reloadFiltered();
-  }, [reloadAll, reloadFiltered]);
+  const reload = useCallback(
+    () => Promise.all([reloadAll(), reloadFiltered()]).then(() => undefined),
+    [reloadAll, reloadFiltered],
+  );
 
-  const { pendingIds, toggleSettled, remove, save } = useDebtMutations({
+  const { pendingIds, toggleSettled, remove, save, withOptimistic } = useDebtMutations({
     onChanged: reload,
     notify: show,
   });
 
-  const summary = useMemo(() => computeSummary(all.debts ?? []), [all.debts]);
-  const groups = useMemo(() => groupByPerson(list.debts ?? []), [list.debts]);
+  // What the user sees: server data plus any change still on its way to the server.
+  const allDebts = useMemo(() => withOptimistic(all.debts), [withOptimistic, all.debts]);
+  const listDebts = useMemo(() => withOptimistic(list.debts), [withOptimistic, list.debts]);
+
+  const summary = useMemo(() => computeSummary(allDebts ?? []), [allDebts]);
+  const groups = useMemo(() => groupByPerson(listDebts ?? []), [listDebts]);
   const openCreate = () => setFormTarget("new");
-  const hasNoDebts = all.debts?.length === 0;
+  const hasNoDebts = allDebts?.length === 0;
+  // Dim only for a filter change; a background refresh after a mutation should stay invisible.
+  const dimList = list.isLoading && pendingIds.size === 0;
 
   function resetFilters() {
     setQuery(DEFAULT_QUERY);
@@ -71,16 +77,16 @@ export function Dashboard() {
   function renderList() {
     const error = all.error ?? list.error;
     if (error) return <ErrorState message={error} onRetry={reload} />;
-    if (!list.debts) return <ListSkeleton />;
+    if (!listDebts) return <ListSkeleton />;
     if (hasNoDebts) return <EmptyState onCreate={openCreate} />;
-    if (list.debts.length === 0) return <NoResults onReset={resetFilters} />;
+    if (listDebts.length === 0) return <NoResults onReset={resetFilters} />;
     return (
-      <div className={list.isLoading ? "opacity-60 transition-opacity" : "transition-opacity"}>
+      <div className={dimList ? "opacity-60 transition-opacity" : "transition-opacity"}>
         {view === "group" ? (
           <PersonGroupList groups={groups} />
         ) : (
           <DebtList
-            debts={list.debts}
+            debts={listDebts}
             pendingIds={pendingIds}
             onToggleSettled={toggleSettled}
             onEdit={setFormTarget}
@@ -143,9 +149,10 @@ export function Dashboard() {
         debt={deleteTarget}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={async (debt) => {
-          // Close either way: on failure the error toast must not hide behind the dialog.
-          await remove(debt);
+          // Optimistic: the row disappears right away. On failure it comes back with an error
+          // toast, which is visible because the dialog is already closed.
           setDeleteTarget(null);
+          await remove(debt);
         }}
       />
       <Toast toast={toast} />
