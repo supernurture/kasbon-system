@@ -145,7 +145,7 @@ Yang paling aku banggain ada dua. Pertama, **feature-based architecture**: semua
 
 ## Trade-off (kalau ada 1 hari lagi)
 
-- **Optimistic update** buat tandai lunas/hapus. Sekarang nunggu respons server + refetch: aman dan konsisten, tapi ada jeda kecil.
+- **Optimistic update buat catat baru/edit.** Tandai lunas & hapus udah optimistic (langsung berubah, rollback otomatis kalau server gagal), tapi form catat/edit masih nunggu server dulu karena error validasi server ditampilin di dalam form.
 - **Filter di URL** (`?status=open&q=budi`) biar bisa di-share/bookmark dan selamat dari refresh.
 - **Pagination / infinite scroll** — sekarang list diambil sekaligus; cukup buat pemakaian pribadi, gak buat ribuan entry.
 - **Test integrasi** API + RLS otomatis (Supabase lokal di CI), bukan cuma unit test format & summary plus cek manual pakai curl.
