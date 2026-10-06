@@ -1,33 +1,35 @@
 # Kasbon
 
-Catat siapa utang siapa, tandai lunas, beres. Web app sederhana buat ngelacak utang piutang pribadi.
+Track who owes whom, mark it paid, done. A small web app for keeping tabs on personal debts.
 
-**Demo:** https://kasbon-system.vercel.app (langsung daftar akun baru, gak perlu konfirmasi email)
+**Demo:** https://kasbon-system.vercel.app (sign up right away, no email confirmation needed)
+
+> The app's UI copy and API error messages are in casual Indonesian, as required by the brief.
 
 ## Stack
 
-- Next.js 16 (App Router, `proxy.ts`) + TypeScript strict
+- Next.js 16 (App Router, `proxy.ts`) + strict TypeScript
 - Tailwind CSS v4
 - Supabase (PostgreSQL + Auth + RLS)
 - Lucide React
 
-### Library tambahan & alasannya
+### Extra libraries and why
 
-| Library                                   | Kenapa                                                                                                                                                                                                                      |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@supabase/ssr`                           | Session Supabase disimpan di cookie, jadi bisa dibaca di Server Component, Route Handler, dan `proxy.ts`.                                                                                                                   |
-| `zod`                                     | Satu schema (`src/features/debts/schemas.ts`) dipakai buat validasi form di client **dan** body/query di API. Aturan dan pesan error gak mungkin beda.                                                                      |
-| `react-hook-form` + `@hookform/resolvers` | Form uncontrolled (gak re-render tiap ketikan), error per field langsung dari schema zod via `zodResolver`, plus `isSubmitting` buat loading state.                                                                         |
-| `server-only`                             | Bikin build gagal kalau kode server (Supabase server client, helper API) ke-import dari client.                                                                                                                             |
-| `tailwind-merge`                          | `cn()` menggabungkan class komponen dengan class dari pemanggil; kalau bentrok (mis. `text-sm` vs `text-base`), class terakhir yang menang. Tanpa ini hasilnya tergantung urutan CSS dan sempat bikin border tombol hilang. |
-| `husky` + `@commitlint/*`                 | Commit yang gak ngikutin [Conventional Commits](https://www.conventionalcommits.org) ditolak di hook `commit-msg`. `pre-commit` jalanin lint, cek format, dan test.                                                         |
-| `prettier`                                | Format konsisten.                                                                                                                                                                                                           |
+| Library                                   | Why                                                                                                                                                                                                             |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@supabase/ssr`                           | Keeps the Supabase session in cookies, so it can be read in Server Components, Route Handlers and `proxy.ts`.                                                                                                   |
+| `zod`                                     | One schema (`src/features/debts/schemas.ts`) validates the form on the client **and** the body/query in the API, so the rules and error messages can never drift apart.                                         |
+| `react-hook-form` + `@hookform/resolvers` | Uncontrolled forms (no re-render on every keystroke), per-field errors straight from the zod schema via `zodResolver`, plus `isSubmitting` for loading states.                                                  |
+| `server-only`                             | Fails the build if server code (Supabase server client, API helpers) is ever imported from the client.                                                                                                          |
+| `tailwind-merge`                          | `cn()` merges a component's classes with the caller's; when they clash (e.g. `text-sm` vs `text-base`) the last one wins. Without it the result depends on CSS order, which once made button borders disappear. |
+| `husky` + `@commitlint/*`                 | Commits that don't follow [Conventional Commits](https://www.conventionalcommits.org) are rejected by the `commit-msg` hook. `pre-commit` runs lint, a format check and the tests.                              |
+| `prettier`                                | Consistent formatting.                                                                                                                                                                                          |
 
-Yang sengaja **gak** dipakai: data-fetching library (cukup satu hook `useDebts`), chart library (bar chart cukup `div` + CSS), date library (`Intl` + fungsi kecil di `src/shared/lib/format.ts`).
+Deliberately **not** used: a data-fetching library (one `useDebts` hook is enough), a chart library (the bar chart is `div`s + CSS), a date library (`Intl` + a few small functions in `src/shared/lib/format.ts`).
 
-## Setup lokal
+## Local setup
 
-Butuh Node 22.18+ (test pakai type stripping bawaan Node) dan pnpm.
+Requires Node 22.18+ (the tests use Node's built-in type stripping) and pnpm.
 
 1. **Install**
 
@@ -35,123 +37,123 @@ Butuh Node 22.18+ (test pakai type stripping bawaan Node) dan pnpm.
    pnpm install
    ```
 
-2. **Env** — salin `.env.example` jadi `.env.local`, isi dari Supabase → Project Settings → API:
+2. **Env** — copy `.env.example` to `.env.local` and fill it in from Supabase → Project Settings → API:
 
    ```bash
    NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...   # atau anon key
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...   # or the anon key
    ```
 
-   Dua-duanya memang publik; yang ngelindungin data adalah RLS. App ini **gak** butuh `service_role` key sama sekali.
+   Both values are public by design; RLS is what protects the data. The app does **not** need the `service_role` key at all.
 
-3. **Migrate** — pilih salah satu:
-   - Supabase Dashboard → SQL Editor → jalankan **semua** file di `supabase/migrations/` **berurutan** (urut nama file), masing-masing paste → Run.
-   - Atau pakai CLI: `pnpm dlx supabase link --project-ref <ref>` lalu `pnpm dlx supabase db push`.
+3. **Migrate** — either:
+   - Supabase Dashboard → SQL Editor → run **every** file in `supabase/migrations/` **in order** (by file name), pasting each one → Run.
+   - Or with the CLI: `pnpm dlx supabase link --project-ref <ref>` then `pnpm dlx supabase db push`.
 
-4. **Auth** — Supabase → Authentication → Sign In / Providers → Email. Kalau "Confirm email" nyala, user harus klik link di email dulu sebelum bisa masuk (app udah nampilin pesannya).
+4. **Auth** — Supabase → Authentication → Sign In / Providers → Email. If "Confirm email" is on, users must click the link in their email before they can sign in (the app already shows a message for that).
 
-5. **Jalanin**
+5. **Run**
 
    ```bash
    pnpm dev        # http://localhost:3000
    ```
 
-### Script
+### Scripts
 
-| Script           | Fungsi                                     |
-| ---------------- | ------------------------------------------ |
-| `pnpm dev`       | Dev server                                 |
-| `pnpm build`     | Production build                           |
-| `pnpm lint`      | ESLint                                     |
-| `pnpm typecheck` | Generate route types + `tsc --noEmit`      |
-| `pnpm test`      | Unit test (`node --test`) format & summary |
-| `pnpm format`    | Prettier                                   |
+| Script           | What it does                                                        |
+| ---------------- | ------------------------------------------------------------------- |
+| `pnpm dev`       | Dev server                                                          |
+| `pnpm build`     | Production build                                                    |
+| `pnpm lint`      | ESLint                                                              |
+| `pnpm typecheck` | Generate route types + `tsc --noEmit`                               |
+| `pnpm test`      | Unit tests (`node --test`): formatting, summary, optimistic patches |
+| `pnpm format`    | Prettier                                                            |
 
 ## API
 
-Semua endpoint wajib login (cookie session Supabase). Error selalu `{ "error": "<pesan Bahasa Indonesia>" }`.
+Every endpoint requires a signed-in user (Supabase session cookie). Errors are always `{ "error": "<message in Indonesian>" }`.
 
-| Method   | Path              | Keterangan                                                                                                                    |
-| -------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `GET`    | `/api/debts`      | `?status=all\|open\|settled` `&type=all\|owed_to_me\|i_owe` `&q=<nama>` `&sort=date\|amount` → `200 { data: Debt[] }`         |
-| `POST`   | `/api/debts`      | `{ type, counterpart_name, amount, due_date, note? }` → `201 { data: Debt }`                                                  |
-| `PATCH`  | `/api/debts/[id]` | Field mana aja dari POST, plus `settled: boolean` → `200 { data: Debt }`. `settled: true` idempotent (waktu lunas gak geser). |
-| `DELETE` | `/api/debts/[id]` | `204`                                                                                                                         |
+| Method   | Path              | Description                                                                                                                           |
+| -------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/debts`      | `?status=all\|open\|settled` `&type=all\|owed_to_me\|i_owe` `&q=<name>` `&sort=date\|amount` → `200 { data: Debt[] }`                 |
+| `POST`   | `/api/debts`      | `{ type, counterpart_name, amount, due_date, note? }` → `201 { data: Debt }`                                                          |
+| `PATCH`  | `/api/debts/[id]` | Any of the POST fields, plus `settled: boolean` → `200 { data: Debt }`. `settled: true` is idempotent (the settled time never moves). |
+| `DELETE` | `/api/debts/[id]` | `204`                                                                                                                                 |
 
-Status code: `400` input gak valid (termasuk field asing kayak `user_id`), `401` belum login, `404` gak ada / bukan punya kamu, `500` error server (detail cuma di log server).
+Status codes: `400` invalid input (including unknown fields such as `user_id`), `401` not signed in, `404` not found / not yours, `500` server error (details only in the server log).
 
-## Cek kebocoran RLS
+## RLS leak check
 
-Bisa langsung dicoba, cukup `bash` + `curl` (Git Bash di Windows juga jalan). Publishable key di bawah memang publik by design: yang ngejaga data itu RLS di Postgres, bukan kerahasiaan key. Script-nya bikin dua akun baru (A dan B), A nyatet satu entry, lalu B nyoba baca, edit, hapus, dan nyamar jadi A lewat Supabase REST API langsung (tanpa lewat app).
+Ready to run with just `bash` + `curl` (Git Bash on Windows works too). The publishable key below is public by design: the data is protected by RLS in Postgres, not by keeping the key secret. The script creates two fresh accounts (A and B), A records one entry, then B tries to read, edit, delete and impersonate A directly through the Supabase REST API (bypassing the app).
 
 ```bash
 URL="https://lphyvvojxisvxpnfkmkx.supabase.co"
 KEY="sb_publishable_tIPI5scvwUnD2SvEilt0rA_wbxGUqqk"
 H=(-H "apikey: $KEY" -H "Content-Type: application/json")
-token() { curl -s "$URL/auth/v1/signup" "${H[@]}" -d "{\"email\":\"$1\",\"password\":\"Rahasia-12345\"}" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4; }
+token() { curl -s "$URL/auth/v1/signup" "${H[@]}" -d "{\"email\":\"$1\",\"password\":\"Secret-12345\"}" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4; }
 A=$(token "rls-a-$RANDOM@example.com")
 B=$(token "rls-b-$RANDOM@example.com")
 A_ID=$(curl -s "$URL/auth/v1/user" "${H[@]}" -H "Authorization: Bearer $A" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
-# A nyatet entry pribadi
+# A records a private entry
 ID=$(curl -s "$URL/rest/v1/debts" "${H[@]}" -H "Authorization: Bearer $A" -H "Prefer: return=representation" \
-  -d '{"type":"owed_to_me","counterpart_name":"Rahasia A","amount":777}' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+  -d '{"type":"owed_to_me","counterpart_name":"Secret A","amount":777}' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
-# B baca semua → []
+# B reads everything → []
 curl -s "$URL/rest/v1/debts?select=*" "${H[@]}" -H "Authorization: Bearer $B"; echo
-# B baca entry A → []
+# B reads A's entry → []
 curl -s "$URL/rest/v1/debts?id=eq.$ID" "${H[@]}" -H "Authorization: Bearer $B"; echo
-# B edit entry A → [] (0 baris berubah)
+# B edits A's entry → [] (0 rows changed)
 curl -s -X PATCH "$URL/rest/v1/debts?id=eq.$ID" "${H[@]}" -H "Authorization: Bearer $B" -H "Prefer: return=representation" -d '{"amount":1}'; echo
-# B hapus entry A → [] (0 baris kehapus)
+# B deletes A's entry → [] (0 rows deleted)
 curl -s -X DELETE "$URL/rest/v1/debts?id=eq.$ID" "${H[@]}" -H "Authorization: Bearer $B" -H "Prefer: return=representation"; echo
-# B bikin entry atas nama A → 403
+# B creates an entry owned by A → 403
 curl -s -o /dev/null -w "%{http_code}\n" "$URL/rest/v1/debts" "${H[@]}" -H "Authorization: Bearer $B" \
-  -d "{\"type\":\"i_owe\",\"counterpart_name\":\"nyamar\",\"amount\":1,\"user_id\":\"$A_ID\"}"
-# Cuma API key, tanpa login → 401 "permission denied for table debts"
+  -d "{\"type\":\"i_owe\",\"counterpart_name\":\"spoof\",\"amount\":1,\"user_id\":\"$A_ID\"}"
+# API key only, not signed in → 401 "permission denied for table debts"
 curl -s "$URL/rest/v1/debts?select=*" "${H[@]}"; echo
-# A cek lagi → masih [{"counterpart_name":"Rahasia A","amount":777}], gak berubah
+# A checks again → still [{"counterpart_name":"Secret A","amount":777}], untouched
 curl -s "$URL/rest/v1/debts?select=counterpart_name,amount" "${H[@]}" -H "Authorization: Bearer $A"; echo
 ```
 
-Lewat API app (`/api/debts`) hasilnya sama: tanpa login `401`, dan entry milik user lain `404`.
+Through the app's API (`/api/debts`) the result is the same: `401` when not signed in, and `404` for another user's entry.
 
-## Struktur
+## Structure
 
-Feature-based: semua yang nyangkut satu fitur tinggal bareng; `app/` cuma routing tipis.
+Feature-based: everything that belongs to one feature lives together; `app/` is a thin routing layer.
 
 ```
 src/
   app/                    # routing: (auth)/login, (app)/ dashboard, api/debts
-  proxy.ts                # refresh session + gate halaman (Next 16 pengganti middleware)
+  proxy.ts                # session refresh + page gate (Next 16's replacement for middleware)
   features/
     auth/                 # schema, server actions, AuthForm
-    debts/                # schema zod, API client, hooks, komponen, logic summary (+ test)
+    debts/                # zod schema, API client, hooks, components, summary + optimistic logic (+ tests)
   shared/
     components/ui/        # Button, Input, Select, Dialog, SegmentedControl, Toast
     hooks/                # useToast, useDebouncedValue
-    lib/                  # supabase clients, format Rupiah/tanggal (+ test), helper HTTP, env
-supabase/migrations/      # skema + RLS
+    lib/                  # Supabase clients, Rupiah/date formatting (+ tests), HTTP helpers, env
+supabase/migrations/      # schema + RLS
 ```
 
 ## Approach
 
-Yang paling aku banggain ada dua. Pertama, **feature-based architecture**: semua yang nyangkut satu fitur (schema, API client, hooks, komponen, logic + test-nya) tinggal bareng di `src/features/<fitur>`, `app/` cuma routing tipis yang manggil fitur, dan `shared/` cuma isi hal generik (UI primitives, Supabase client, format Rupiah/tanggal). Aturannya dijaga: `auth` dan `debts` gak saling import, `shared/` gak boleh bergantung ke fitur mana pun, jadi nambah atau ngehapus fitur cukup di satu folder tanpa nyenggol yang lain. Kedua, **standar commit message**: setiap commit wajib ngikutin [Conventional Commits](https://www.conventionalcommits.org) dan itu dipaksa tooling, bukan cuma disiplin: hook `commit-msg` (husky + commitlint) nolak pesan yang gak sesuai, dan `pre-commit` jalanin lint, cek format, dan unit test. Hasilnya history yang kebaca kayak changelog (`feat(db)`, `feat(auth)`, `fix(ui)`, `docs`), tiap commit kecil dan fokus satu perubahan. Di level kode, prinsipnya **satu sumber kebenaran**: schema zod yang sama (`strict`) dipakai form dan API sehingga validasi client & server gak mungkin beda dan field selundupan kayak `user_id` langsung ditolak, sementara RLS di Postgres jadi pagar terakhir karena API sengaja pakai session user (bukan service role), dan "Tandai lunas" idempotent di server jadi refresh gak pernah bikin status balik.
+There are two things I'm most proud of. First, the **feature-based architecture**: everything that belongs to a feature (schema, API client, hooks, components, logic and its tests) lives together in `src/features/<feature>`, `app/` is just thin routing that calls into features, and `shared/` only holds generic pieces (UI primitives, the Supabase client, Rupiah/date formatting). The boundaries are kept: `auth` and `debts` never import each other and `shared/` never depends on a feature, so adding or removing a feature touches a single folder. Second, the **commit message standard**: every commit must follow [Conventional Commits](https://www.conventionalcommits.org), enforced by tooling rather than discipline: the `commit-msg` hook (husky + commitlint) rejects non-conforming messages and `pre-commit` runs lint, a format check and the unit tests. The result is a history that reads like a changelog (`feat(db)`, `feat(auth)`, `fix(ui)`, `docs`), with small commits that each do one thing. At the code level the principle is a **single source of truth**: the same strict zod schema is used by the form and the API, so client and server validation can't diverge and smuggled fields such as `user_id` are rejected outright; RLS in Postgres is the last line of defence because the API deliberately uses the user's own session (not the service role); and "Tandai lunas" (mark as paid) is idempotent on the server, so a refresh never flips the status back.
 
-## Catatan buat reviewer
+## Notes for reviewers
 
-- **"Confirm email" sengaja dimatikan** di project Supabase demo. Layanan email bawaan Supabase cuma ngirim ke anggota tim project (dan jumlahnya dibatasi), jadi kalau nyala, kamu gak bakal nerima link konfirmasi dan gak bisa masuk. Dengan dimatikan, kamu bisa langsung daftar dua akun buat ngetes RLS. Keamanan data gak berkurang: yang ngelindungin data itu RLS, bukan verifikasi email.
-- Buat production: nyalain lagi "Confirm email" + pasang SMTP sendiri (Resend / SES). App-nya udah siap: kalau konfirmasi nyala, halaman daftar nampilin "Sip! Cek email kamu buat konfirmasi…".
+- **"Confirm email" is deliberately turned off** in the demo Supabase project. Supabase's built-in email service only delivers to members of the project's team (and is rate-limited), so with it on you would never receive the confirmation link and couldn't sign in. With it off you can sign up two accounts straight away to test RLS. Data security is unaffected: the data is protected by RLS, not by email verification.
+- For production: turn "Confirm email" back on and configure your own SMTP (Resend / SES). The app is already prepared: with confirmation on, the sign-up page shows "Sip! Cek email kamu buat konfirmasi…" ("Check your email to confirm…").
 
-## Trade-off (kalau ada 1 hari lagi)
+## Trade-offs (with one more day)
 
-- **Optimistic update buat catat baru/edit.** Tandai lunas & hapus udah optimistic (langsung berubah, rollback otomatis kalau server gagal), tapi form catat/edit masih nunggu server dulu karena error validasi server ditampilin di dalam form.
-- **Filter di URL** (`?status=open&q=budi`) biar bisa di-share/bookmark dan selamat dari refresh.
-- **Pagination / infinite scroll** — sekarang list diambil sekaligus; cukup buat pemakaian pribadi, gak buat ribuan entry.
-- **Test integrasi** API + RLS otomatis (Supabase lokal di CI), bukan cuma unit test format & summary plus cek manual pakai curl.
-- **Verifikasi email** dimatikan demi demo (lihat catatan di atas); production butuh SMTP sendiri.
-- **Sort** baru arah turun (terbaru / terbesar); belum ada toggle naik.
+- **Optimistic updates for create/edit.** Mark-as-paid and delete are already optimistic (the change shows instantly and rolls back automatically if the server fails), but the create/edit form still waits for the server because server validation errors are shown inside the form.
+- **Filters in the URL** (`?status=open&q=budi`) so they can be shared/bookmarked and survive a refresh.
+- **Pagination / infinite scroll** — the list is currently fetched in one go; fine for personal use, not for thousands of entries.
+- **Automated integration tests** for the API + RLS (local Supabase in CI), instead of only unit tests plus manual curl checks.
+- **Email verification** is off for the demo (see the notes above); production needs its own SMTP.
+- **Sorting** is descending only (newest / largest); there is no ascending toggle yet.
 
 ## Time spent
 
-±5 jam.
+About 5 hours.
